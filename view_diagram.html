@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Flow Diagram</title>
+</head>
+<body style="background-color: #f4f5f7; font-family: sans-serif; padding: 40px; display: flex; justify-content: center;">
+
+    <div style="background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 1200px;">
+        <h2>Screening Test Simulator Flow</h2>
+        <div class="mermaid">
+        flowchart TD
+            %% Phase 1: Setup
+            PH1[/"<b>PHASE 1: SETUP</b>"/]:::phase
+            S1["Set Subject, Grade, & Start Rule"]:::init
+            S2["Initialize Bayesian Priors based on Grade"]:::init
+            PH1 --> S1 --> S2
+
+            %% Phase 2: Start Block
+            PH2[/"<b>PHASE 2: START BLOCK (3 Qs at Start Level)</b>"/]:::phase
+            P2Q["Present Start Block Q (Rank-Ordered)"]
+            P2A["User Answers: Correct / Wrong"]
+            P2B["Bayesian Update & Track Streak"]
+            P2Note["<b>Bayesian Logic:</b><br/>If correct, increase belief in levels where Q is easy.<br/>If wrong, increase belief in levels where Q is hard.<br/>Highest belief becomes new Predicted Level."]:::note
+            P2Check{"Start Block Done? (3 Qs)"}
+
+            S2 --> PH2 --> P2Q --> P2A --> P2B --> P2Check
+            P2B -.-> P2Note
+            P2Check -- No --> P2Q
+
+            %% Phase 3: Dynamic Assessment
+            PH3[/"<b>PHASE 3: DYNAMIC ASSESSMENT</b>"/]:::phase
+            P3Pool{"Pool Exhausted?"}
+            P3Streak{"Streak Triggered?<br/>(5 same responses at same level)"}
+            P3Probe["<b>Probe Mode:</b><br/>Force Level ± 1, Queue 3 Qs"]
+            P3Normal["<b>Normal Move:</b><br/>Set Level to Predicted Level"]
+            P3Q["Present Q (Rank-Ordered)"]
+            P3A["User Answers: Correct / Wrong"]
+            P3B["Bayesian Update & Track Streak"]
+            P3Passage{"Is Next Q a<br/>Language Passage?"}
+            P3Max{"Step >= 15 Qs?"}
+
+            P2Check -- Yes --> PH3 --> P3Pool
+            P3Pool -- No --> P3Streak
+            P3Streak -- Yes --> P3Probe
+            P3Streak -- No --> P3Normal
+            P3Probe --> P3Q
+            P3Normal --> P3Q
+            P3Q --> P3A --> P3B --> P3Passage
+            P3Passage -- No --> P3Max
+            P3Max -- No --> P3Pool
+
+            %% Phase 4: Language Passages
+            PH4[/"<b>PHASE 4: LANGUAGE PASSAGES</b>"/]:::phase
+            P4Lock["<b>Passage Mode:</b><br/>Lock Current Level, Ignore Streaks"]
+            P4Q["Present Passage Q (Rank-Ordered)"]
+            P4A["User Answers: Correct / Wrong"]
+            P4B["Bayesian Update"]
+            P4Still{"Is Next Q still a Passage?"}
+            P4Bypass["Bypass 15 Q Limit"]
+            P4Max{"Step >= 15 Qs?"}
+            P4Return(["↩ Return to Phase 3"]):::returnNode
+
+            P3Passage -- Yes --> PH4 --> P4Lock --> P4Q --> P4A --> P4B --> P4Still
+            P4Still -- Yes --> P4Bypass --> P4Q
+            P4Still -- No --> P4Max
+            P4Max -- No --> P4Return
+
+            %% Phase 5: Final Level Assignment
+            PH5[/"<b>PHASE 5: FINAL LEVEL ASSIGNMENT</b>"/]:::phase
+            P5Clamp{"Predicted Level > Enrolled Grade?"}
+            P5Clamped(["End: Assign Enrolled Grade (Clamped)"]):::endNode
+            P5End(["End: Assign Predicted Level"]):::endNode
+
+            P3Pool -- Yes --> PH5
+            P3Max -- Yes --> PH5
+            P4Max -- Yes --> PH5
+            PH5 --> P5Clamp
+            P5Clamp -- Yes --> P5Clamped
+            P5Clamp -- No --> P5End
+
+            %% Styling
+            classDef phase fill:#4a90d9,stroke:#2c5f8a,stroke-width:2px,color:#fff,font-size:14px;
+            classDef init fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#000;
+            classDef endNode fill:#f8d7da,stroke:#dc3545,stroke-width:2px,color:#000;
+            classDef note fill:#e2e3e5,stroke:#6c757d,stroke-width:1px,color:#000,stroke-dasharray: 5 5;
+            classDef returnNode fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#000;
+        </div>
+    </div>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>
